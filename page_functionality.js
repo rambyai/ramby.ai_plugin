@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
+    // Setup the plugin tabs
     const tabs = document.querySelectorAll(".tab");
     const tabContents = document.querySelectorAll(".tab-content");
 
@@ -15,41 +16,12 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    window.parent.postMessage({ type: "loadKey" }, "*");
+    // Load the settings
+    window.parent.postMessage({ type: "loadSettings" }, "*");    
 
-    window.addEventListener("message", (event) => {
-        if (event.data.type === "settingsLoaded") {
-            const { service, apiKey } = event.data.payload || {};
-            if (service && apiKey) {
-                console.log("Settings loaded in UI:", service, apiKey);
-
-                // Populate UI fields
-                document.getElementById("api-service").value = service;
-                document.getElementById("api-key").value = apiKey;
-            }
-        }
+    // Copy JSON output for troubleshooting
+    document.getElementById('label-for-json-input').addEventListener('click', () => {
+        const textarea = document.getElementById('json-input');
+        textarea.style.display = 'block';
     });
-    
 });
-
-/* START SAVE SETTING FUNCTIONS */
-
-function encryptData(data) {
-    try {
-        return btoa(data); // Base64 encode
-    } catch (error) {
-        console.error("Error encrypting data:", error);
-        return null;
-    }
-}
-
-function decryptData(encryptedData) {
-    try {
-        return atob(encryptedData); // Base64 decode
-    } catch (error) {
-        console.error("Error decrypting data:", error);
-        return null;
-    }
-}
-
-/* END SAVE SETTING */

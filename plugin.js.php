@@ -7,82 +7,97 @@ header("Content-Type: application/javascript; charset=utf-8");
 
 penpot.ui.open("Design with AI", "http://localhost:80/index.php", { width: 300, height: 900 });
 
-
-// Listen for messages from the iframe
 penpot.ui.onMessage(async (message) => {
-    
-    if( message ==="clear-board") {
-      clearBoard();
-    }else if (message.type === "load-json") {
-
-      clearBoard();
-      const json = message.payload;
-      console.log("Received JSON:", json);
-      buildPageFromJSON(json);
-
-    } else if (message === "get-page-json") {
-        try {
-
-          const shapes = penpot.currentPage.findShapes();
-          const allShapeData = shapes.map((shape) => {
-            const data = Object.keys(shape).reduce((acc, key) => {
-              try {
-                acc[key] = shape[key];
-              } catch (error) {
-                console.warn(`Error accessing property '${key}' on shape`, error);
-              }
-              return acc;
-            }, {});
-
-            // Specific handling for text shapes
-            if (shape.type === "text") {
-              data.textContent = shape.content || "No content available";
-            }
-            return data;
-          });
-
-          console.log("Full JSON with dynamic properties:", JSON.stringify(allShapeData, null, 2));
-
-        } catch (error) {
-            console.error("Error fetching page JSON:", error);
-            penpot.ui.sendMessage("Error fetching page JSON", "*");
+    try {
+        let action = null;
+        if (typeof message === "string") {
+            action = message; // Directly use string messages as action
+        } else if (typeof message === "object" && message !== null && message.type) {
+            action = message.type; // Use the `type` property from object messages
         }
-    } else if (message === "update-text-settings") {
-        const settings = message.payload;
-        document.getElementById("font-size").value = settings.fontSize;
-        document.getElementById("font-family").value = settings.fontFamily;
-        document.getElementById("text-characters").innerText = settings.characters;
-    } else if (message === "clear-settings") {
-        // Clear the plugin interface when no element is selected
-        document.getElementById("font-size").value = "";
-        document.getElementById("font-family").value = "";
-        document.getElementById("text-characters").innerText = "No element selected.";
-    } else if (message.type === "saveKey") {
-        // Save API key and service
-        const { service, apiKey } = message.payload;
 
-        // Encrypt the API key (optional, can be skipped)
-        const encryptedKey = encryptData(apiKey);
+        console.log("Determined action:", action);
 
-        await penpot.root.setPluginData('aiSettings', JSON.stringify({ service, apiKey: encryptedKey }));
-        console.log(`Settings saved: Service - ${service}, API Key - ${encryptedKey}`);
-    } else if (message.type === "loadKey") {
-        // Retrieve API key and service
-        const data = await penpot.root.getPluginData('aiSettings');
-        if (data) {
-            const { service, apiKey: encryptedKey } = JSON.parse(data);
+        switch (action) {
+            case "sendToAI":
+                try {
+                    const settings = await penpot.root.getPluginData("aiSettings");
+                    if (!settings) {
+                        console.error("API settings not found. Please configure your API key and service.");
+                        return;
+                    }
 
-            // Decrypt the API key (optional, can be skipped)
-            const decryptedKey = decryptData(encryptedKey);
+                    const { service, apiKey } = JSON.parse(settings);
+                    const prompt = message.payload.prompt;
 
-            console.log(`Settings loaded: Service - ${service}, API Key - ${decryptedKey}`);
-            penpot.ui.sendMessage({ type: "settingsLoaded", payload: { service, apiKey: decryptedKey } });
-        } else {
-            console.warn("No settings found.");
-            penpot.ui.sendMessage({ type: "settingsLoaded", payload: null });
+                    // Forward the settings and prompt to the UI
+                    penpot.ui.sendMessage({
+                        type: "callAI",
+                        payload: { service, apiKey, prompt },
+                    });
+                } catch (error) {
+                    console.error("Error preparing AI request:", error);
+                }
+                break;
+
+            case "clearBoard":
+                clearBoard();
+                break;
+
+            case "loadJSON":
+                clearBoard();
+                const json = message.payload;
+                buildPageFromJSON(json);
+                break;
+
+            case "getPageJSON":
+                try {
+                    const shapes = penpot.currentPage.findShapes();
+                    const allShapeData = shapes.map((shape) => {
+                        const data = Object.keys(shape).reduce((acc, key) => {
+                            try {
+                                acc[key] = shape[key];
+                            } catch (error) {
+                                console.warn(`Error accessing property '${key}' on shape`, error);
+                            }
+                            return acc;
+                        }, {});
+
+                        if (shape.type === "text") {
+                            data.textContent = shape.content || "No content available";
+                        }
+                        return data;
+                    });
+                } catch (error) {
+                    console.error("Error fetching page JSON:", error);
+                    penpot.ui.sendMessage("Error fetching page JSON", "*");
+                }
+                break;
+
+            case "saveSettings":
+                const { service, apiKey } = message.payload;
+                await penpot.root.setPluginData("aiSettings", JSON.stringify({ service, apiKey }));
+                console.log(`Settings saved: Service - ${service}, API Key - ${apiKey}`);
+                break;
+
+            case "loadSettings":
+                const data = await penpot.root.getPluginData("aiSettings");
+                if (data) {
+                    const { service, apiKey } = JSON.parse(data);
+                    penpot.ui.sendMessage({ type: "settingsLoaded", payload: { service, apiKey } });
+                } else {
+                    console.warn("No settings found.");
+                    penpot.ui.sendMessage({ type: "settingsLoaded", payload: null });
+                }
+                break;
+
+            default:
+                console.warn(`Unhandled action: ${action}`);
+                break;
         }
+    } catch (error) {
+        console.error("Error handling message:", error);
     }
-
 });
 
 penpot.on("selectionchange", (selection) => {
@@ -103,20 +118,6 @@ penpot.on("selectionchange", (selection) => {
                 console.error("Shape not found for ID:", selectedId);
                 return;
             }
-
-            console.log("Selected shape:", selectedShape);
-
-            // Update the background color (fills property)
-            /*
-            selectedShape.fills = [
-                {
-                    fillColor: "#ff00b3",
-                    fillOpacity: 1
-                }
-            ];
-            */
-
-            console.log(`Updated shape with ID ${selectedId} to pink background.`);
         });
 
         // Notify the UI or perform additional actions if needed
@@ -141,7 +142,7 @@ function clearBoard() {
 
         // Check if shapes exist
         if (!shapes || shapes.length === 0) {
-            console.log("The board is already empty!");
+            console.warn("The board is already empty!");
             return;
         }
 
@@ -152,7 +153,6 @@ function clearBoard() {
         removableShapes.forEach((shape) => {
             try {
                 shape.remove();
-                console.log(`Removed shape: ${shape.name || shape.id}`);
             } catch (error) {
                 console.error(`Error removing shape (${shape.name || shape.id}):`, error);
             }
@@ -164,7 +164,6 @@ function clearBoard() {
     }
 }
 
-// Function to create a rectangle
 function createRectangle(shape) {
     const rect = penpot.createRectangle();
     rect.name = shape.name || "Rectangle";
@@ -173,7 +172,6 @@ function createRectangle(shape) {
     rect.width = shape.dimensions.width;
     rect.height = shape.dimensions.height;
     rect.fills = shape.color || [];
-    console.log("Rectangle added:", rect);
 }
 
 function createText(shape) {
@@ -188,10 +186,8 @@ function createText(shape) {
     text.fontFamily = fontFamily;
     text.fontSize = fontSize;
     text.fills = shape.color || [{ fillColor: "#000000", fillOpacity: 1 }];
-    console.log("Text added:", text);
 }
 
-// Function to create an ellipse
 function createEllipse(shape) {
     const ellipse = penpot.createEllipse();
     ellipse.name = shape.name || "Ellipse";
@@ -200,10 +196,8 @@ function createEllipse(shape) {
     ellipse.width = shape.dimensions.width;
     ellipse.height = shape.dimensions.height;
     ellipse.fills = shape.color || [];
-    console.log("Ellipse added:", ellipse);
 }
 
-// Helper function to validate the font family
 function validateFont(fontFamily) {
     const availableFonts = ["sourcesanspro", "inter", "roboto", "opensans"]; // Add Penpot-supported fonts
     if (availableFonts.includes(fontFamily.toLowerCase())) {
@@ -235,7 +229,6 @@ function buildPageFromJSON(json) {
                     newShape.x = shapeData.position.x;
                     newShape.y = shapeData.position.y;
                     if (shapeData.color) newShape.fills = shapeData.color;
-                    console.log("Added rectangle:", newShape);
                     break;
 
                 case "ellipse":
@@ -245,7 +238,6 @@ function buildPageFromJSON(json) {
                     newShape.x = shapeData.position.x;
                     newShape.y = shapeData.position.y;
                     if (shapeData.color) newShape.fills = shapeData.color;
-                    console.log("Added ellipse:", newShape);
                     break;
 
                 case "text":
@@ -261,8 +253,6 @@ function buildPageFromJSON(json) {
                     console.warn(`Unknown shape type: ${shapeData.type}`);
             }
         });
-
-        console.log("Page construction completed.");
     } catch (error) {
         console.error("Error building page from JSON:", error);
     }

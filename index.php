@@ -30,8 +30,6 @@
         <textarea id="ai-prompt" placeholder="Describe your design to AI">Please design me a page that has 4 boxes, all the same width, aligned left. Include 2 circles, one above the boxes and one below. The circles should be smaller and centered with the boxes.</textarea>
       </div>
       <button id="send-to-ai" class="button right">Send to AI</button>
-      <button id="send-to-ai-directly" class="button right">Send to AI DIRECTLY</button>
-
     </div>
 
     <div id="component-design" class="tab-content">
@@ -45,7 +43,7 @@
 
         <button id="load-json" class="button">Load JSON</button>
 
-        <button id="get-page-json">Get Page JSON</button>
+        <button id="get-page-json" class="button">Get Page JSON</button>
         <pre id="output"></pre>
 
     </div>
@@ -72,13 +70,13 @@
 
     </div>
 
-<script>
+    <div id="waiting-dialog" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.8); color: #fff; padding: 20px; border-radius: 5px; text-align: center;">
+        <p>Generating design from AI...</p>
+    </div>
 
-  <?php 
-    include( 'page_functionality.js' );
-    include( 'penpot_comm.js' );
-  ?>
-</script> 
+    <script>
+    <?php include( 'penpot_comm.js' ); ?>
+    </script> 
 
-</body>
+  </body>
 </html>

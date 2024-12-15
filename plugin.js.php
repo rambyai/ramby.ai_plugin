@@ -19,58 +19,41 @@ penpot.ui.onMessage(async (message) => {
         console.log("Determined action:", action);
 
         switch (action) {
-            case "sendToAI":
+            case "getAPICredentials":
                 try {
+                    // Fetch the saved settings from Penpot
                     const settings = await penpot.root.getPluginData("aiSettings");
                     if (!settings) {
                         console.error("API settings not found. Please configure your API key and service.");
+                        penpot.ui.sendMessage({
+                            type: "error",
+                            payload: "API settings are not configured.",
+                        });
                         return;
                     }
 
                     const { service, apiKey } = JSON.parse(settings);
-                    const prompt = message.payload.prompt;
 
-                    // Forward the settings and prompt to the UI
+                    if (!service || !apiKey ) {
+                        console.error("Service or API Key is missing.");
+                        penpot.ui.sendMessage({
+                            type: "error",
+                            payload: "Service or API Key is missing.",
+                        });
+                        return;
+                    }
+
+                    // Send the service, API key, and prompt back to the UI
                     penpot.ui.sendMessage({
-                        type: "callAI",
-                        payload: { service, apiKey, prompt },
+                        type: "callAIAPI",
+                        payload: { service, apiKey },
                     });
                 } catch (error) {
-                    console.error("Error preparing AI request:", error);
-                }
-                break;
-
-            case "clearBoard":
-                clearBoard();
-                break;
-
-            case "loadJSON":
-                clearBoard();
-                const json = message.payload;
-                buildPageFromJSON(json);
-                break;
-
-            case "getPageJSON":
-                try {
-                    const shapes = penpot.currentPage.findShapes();
-                    const allShapeData = shapes.map((shape) => {
-                        const data = Object.keys(shape).reduce((acc, key) => {
-                            try {
-                                acc[key] = shape[key];
-                            } catch (error) {
-                                console.warn(`Error accessing property '${key}' on shape`, error);
-                            }
-                            return acc;
-                        }, {});
-
-                        if (shape.type === "text") {
-                            data.textContent = shape.content || "No content available";
-                        }
-                        return data;
+                    console.error("Error fetching AI settings:", error);
+                    penpot.ui.sendMessage({
+                        type: "error",
+                        payload: "An error occurred while fetching AI settings.",
                     });
-                } catch (error) {
-                    console.error("Error fetching page JSON:", error);
-                    penpot.ui.sendMessage("Error fetching page JSON", "*");
                 }
                 break;
 

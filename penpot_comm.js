@@ -1,3 +1,32 @@
+// UI/UX Setup
+document.addEventListener("DOMContentLoaded", () => {
+    // Setup the plugin tabs
+    const tabs = document.querySelectorAll(".tab");
+    const tabContents = document.querySelectorAll(".tab-content");
+
+    tabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+            // Remove active class from all tabs and tab contents
+            tabs.forEach((t) => t.classList.remove("active"));
+            tabContents.forEach((content) => content.classList.remove("active"));
+
+            // Add active class to the clicked tab and the corresponding tab content
+            tab.classList.add("active");
+            const target = document.getElementById(tab.getAttribute("data-tab"));
+            target.classList.add("active");
+        });
+    });
+
+    // Load the settings
+    window.parent.postMessage({ type: "loadSettings" }, "*");    
+
+    // Copy JSON output for troubleshooting
+    document.getElementById('label-for-json-input').addEventListener('click', () => {
+        const textarea = document.getElementById('json-input');
+        textarea.style.display = 'block';
+    });
+});
+
 // Listen for messages from the plugin
 // Consolidated and async-compatible event listener
 window.addEventListener("message", async (event) => {
@@ -5,35 +34,6 @@ window.addEventListener("message", async (event) => {
 
     // Log the received message for debugging
     console.log("Message from plugin:", message);
-
-    // Handle the "callAI" action
-    if (message.type === "callAI") {
-        console.warn("Processing AI call...");
-        const { service, apiKey, prompt } = message.payload;
-
-        try {
-            let aiResponse;
-            switch (service) {
-                case "openai":
-                    aiResponse = await callChatGPT(apiKey, prompt);
-                    break;
-                case "anthropic":
-                    aiResponse = await callAnthropic(apiKey, prompt);
-                    break;
-                default:
-                    console.error(`Unsupported AI service: ${service}`);
-                    return;
-            }
-
-            if (aiResponse) {
-                // Send the generated JSON back to the Penpot plugin
-                window.parent.postMessage({ type: "loadJSON", payload: aiResponse }, "*");
-            }
-        } catch (error) {
-            console.error("Error handling AI call:", error);
-        }
-        return; // Exit early for "callAI" to prevent further processing
-    }
 
     // Handle pretty-printing JSON messages in the UI
     if (message && typeof message === "object") {
@@ -65,12 +65,73 @@ window.addEventListener("message", async (event) => {
         document.getElementById("font-family").value = "";
         document.getElementById("text-characters").innerText = "No element selected.";
     }
+
+    if (message.type === "callAIAPI") {
+        const { service, apiKey } = message.payload;
+        const prompt = document.getElementById("ai-prompt").value.trim();
+
+        if (!service || !apiKey || !prompt) {
+            console.error("Received incomplete credentials or prompt.");
+            alert("Failed to fetch API credentials or prompt. Check the console for details.");
+            return;
+        }
+
+        try {
+            // Send a waiting message to the user
+            showWaitingDialog("Generating design from AI...");
+
+            let aiResponse = null;
+            switch (service) {
+                case "openai":
+                    aiResponse = await callChatGPT(apiKey, prompt);
+                    break;
+                default:
+                    console.error(`Unsupported AI service: ${service}`);
+                    hideWaitingDialog();
+                    alert(`Unsupported AI service: ${service}`);
+                    return;
+            }
+
+            if (aiResponse) {
+                console.log("AI response received:", aiResponse);
+                // Send the generated JSON back to Penpot
+                window.parent.postMessage(
+                    { type: "loadJSON", payload: aiResponse },
+                    "*"
+                );
+                hideWaitingDialog();
+            } else {
+                console.error("Failed to generate design.");
+                hideWaitingDialog();
+                alert("Failed to generate design. Check the console for details.");
+            }
+        } catch (error) {
+            console.error("Error handling AI call:", error);
+            hideWaitingDialog();
+            alert("An error occurred while processing the AI call.");
+        }
+    }
+
+    if (message.type === "waiting") {
+        showWaitingDialog(message.payload);
+    }
+
+    if (message.type === "error") {
+        hideWaitingDialog();
+        alert(`Error: ${message.payload}`);
+    }
+
+    if (message.type === "loadJSON") {
+        const json = event.data.payload;
+        document.getElementById("json-input").value = JSON.stringify(json, null, 2);
+    }
+
 });
 
 const outputElement = document.getElementById("output");
 
 // AI Calls
-document.getElementById("send-to-ai").addEventListener("click", () => {
+document.getElementById("send-to-ai").addEventListener("click", async () => {
     const prompt = document.getElementById("ai-prompt").value.trim();
 
     if (!prompt) {
@@ -78,25 +139,15 @@ document.getElementById("send-to-ai").addEventListener("click", () => {
         return;
     }
 
-    // Send the prompt to the plugin
-    window.parent.postMessage({ type: "sendToAI", payload: { prompt } }, "*");
-    console.log("Prompt sent to AI.");
-});
-
-// TESTING
-document.getElementById("send-to-ai-directly").addEventListener("click", () => {
-    callChatGPT('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', 'Please design me a page that has 4 boxes, all the same width, aligned left. Include 2 circles, one above the boxes and one below. The circles should be smaller and centered with the boxes.')
-});
-
-window.addEventListener("message", (event) => {
-    if (event.data.type === "loadJSON") {
-        const json = event.data.payload;
-
-        // Show the JSON in the textarea (optional, for debugging)
-        document.getElementById("json-input").value = JSON.stringify(json, null, 2);
+    // Send a request to Penpot to fetch the credentials
+    try {
+        window.parent.postMessage({ type: "getAPICredentials"}, "*" );
+        console.log("Request sent to fetch API credentials.");
+    } catch (error) {
+        console.error("Error sending request to fetch credentials:", error);
+        alert("Failed to fetch API credentials. Check the console for details.");
     }
 });
-// End AI Calls
 
 // Listen for the "Load JSON" button click
 document.getElementById("load-json").addEventListener("click", () => {
@@ -149,69 +200,94 @@ function displayMessage(message, color) {
     }, 3000);
 }
 
-// API Calls
 // Call OpenAI via the proxy
-async function callChatGPT(apiKey, prompt) {
-    try {
-        const response = await fetch("https://ramby.ai/proxy/", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                api_key: apiKey,
-                service: "openai",
-                messages: [
-                    { role: "system", content: "You are an AI assistant generating Penpot design JSON." },
-                    { role: "user", content: prompt },
-                ],
-                model: "gpt-4", // Optional model selection
-            }),
+function callChatGPT(apiKey, prompt) {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "https://api.openai.com/v1/chat/completions");
+        xhr.setRequestHeader("Authorization", `Bearer ${apiKey}`);
+        xhr.setRequestHeader("Content-Type", "application/json");
+
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        resolve(response.choices[0].message.content);
+                    } catch (err) {
+                        reject("Error parsing response: " + err.message);
+                    }
+                } else {
+                    reject("HTTP Error: " + xhr.statusText);
+                }
+            }
+        };
+
+        const body = JSON.stringify({
+            model: "ft:gpt-3.5-turbo-1106:personal:rambyai-penpot:AeTY5GW2",
+            messages: [
+                { role: "system", content: "You are an AI assistant generating Penpot design JSON." },
+                { role: "user", content: prompt },
+            ],
         });
 
-        const data = await response.json();
-        if (data.choices && data.choices[0] && data.choices[0].message) {
-            console.log("ChatGPT response:", data.choices[0].message.content);
-            return JSON.parse(data.choices[0].message.content);
-        } else {
-            console.error("Invalid response from ChatGPT:", data);
-            return null;
+        try {
+            xhr.send(body);
+        } catch (error) {
+            reject("Request failed: " + error.message);
         }
-    } catch (error) {
-        console.error("Error communicating with ChatGPT:", error);
-        return null;
-    }
+    });
 }
 
-// Call Anthropic via the proxy
-async function callAnthropic(apiKey, prompt) {
-    try {
-        const response = await fetch("http://localhost/proxy/", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                api_key: apiKey,
-                service: "anthropic",
-                messages: [
-                    { role: "system", content: "You are an AI assistant generating Penpot design JSON." },
-                    { role: "user", content: prompt },
-                ],
-                model: "claude-v1",
-            }),
+function showWaitingDialog(message) {
+    const waitingDialog = document.getElementById("waiting-dialog");
+    waitingDialog.querySelector("p").textContent = message || "Please wait...";
+    waitingDialog.style.display = "block";
+}
+
+function hideWaitingDialog() {
+    const waitingDialog = document.getElementById("waiting-dialog");
+    waitingDialog.style.display = "none";
+}
+
+
+
+/// LEGACY WORKING FUNCTION
+function callAPIUsingXHR(apiKey, prompt) {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "https://api.openai.com/v1/chat/completions");
+        xhr.setRequestHeader("Authorization", `Bearer ${apiKey}`);
+        xhr.setRequestHeader("Content-Type", "application/json");
+
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        resolve(response);
+                    } catch (err) {
+                        reject("Error parsing response: " + err.message);
+                    }
+                } else {
+                    reject("HTTP Error: " + xhr.statusText);
+                }
+            }
+        };
+
+        const body = JSON.stringify({
+//            model: "g-673f76aa823c8191b8ac8ed14a11ebff",
+            model: "ft:gpt-3.5-turbo-1106:personal:rambyai-penpot:AeTY5GW2",
+            messages: [
+                { role: "system", content: "You are an AI assistant generating Penpot design JSON." },
+                { role: "user", content: prompt },
+            ],
         });
 
-        const data = await response.json();
-        if (data.completion) {
-            console.log("Claude response:", data.completion);
-            return JSON.parse(data.completion.trim());
-        } else {
-            console.error("Invalid response from Anthropic:", data);
-            return null;
+        try {
+            xhr.send(body);
+        } catch (error) {
+            reject("Request failed: " + error.message);
         }
-    } catch (error) {
-        console.error("Error communicating with Anthropic:", error);
-        return null;
-    }
+    });
 }

@@ -156,12 +156,11 @@ label {
 .mb-2{
   margin-bottom:16px;
 }
-
-#label-for-json-input{
-  float:right;
-  font-style: italic;
-  font-size:0.85em;
-  cursor: finger; cursor: pointer;
+.mt-1{
+  margin-top:8px;
+}
+.mt-2{
+  margin-top:16px;
 }
 
 #ai-prompt-div{
@@ -179,4 +178,28 @@ label {
   color: green; 
   font-size: 0.9em; 
   margin-top: 5px;
+}
+
+#page-structure{
+    background-color: #ddd;
+}
+
+.textarea-container {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+
+.copy-icon {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    cursor: pointer;
+    font-size: 18px; /* Adjust size as needed */
+    color: #555; /* Default icon color */
+    transition: color 0.2s;
+}
+
+.copy-icon:hover {
+    color: #000; /* Change color on hover */
 }

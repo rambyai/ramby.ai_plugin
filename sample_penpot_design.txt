@@ -1,127 +1,133 @@
 {
-  "shapes": [
+  "pages": [
     {
-      "type": "text",
-      "name": "Logo",
-      "position": { "x": 300, "y": 50 },
-      "characters": "saleo",
-      "fontFamily": "sourcesanspro",
-      "fontSize": 48,
-      "color": [{ "fillColor": "#1F1F1F", "fillOpacity": 1 }]
-    },
-    {
-      "type": "text",
-      "name": "Header",
-      "position": { "x": 300, "y": 150 },
-      "characters": "Sign up",
-      "fontFamily": "sourcesanspro",
-      "fontSize": 32,
-      "color": [{ "fillColor": "#1F1F1F", "fillOpacity": 1 }]
-    },
-    {
-      "type": "text",
-      "name": "Sub-header",
-      "position": { "x": 300, "y": 200 },
-      "characters": "Sign up for free and become a member.",
-      "fontFamily": "sourcesanspro",
-      "fontSize": 16,
-      "color": [{ "fillColor": "#6F6F6F", "fillOpacity": 1 }]
-    },
-    {
-      "type": "rectangle",
-      "name": "Google Button",
-      "position": { "x": 250, "y": 250 },
-      "dimensions": { "width": 300, "height": 50 },
-      "color": [{ "fillColor": "#FFFFFF", "fillOpacity": 1 }],
-      "strokes": [{ "strokeColor": "#DDDDDD", "strokeWidth": 1 }]
-    },
-    {
-      "type": "text",
-      "name": "Google Button Text",
-      "position": { "x": 270, "y": 265 },
-      "characters": "Sign up with Google",
-      "fontFamily": "sourcesanspro",
-      "fontSize": 16,
-      "color": [{ "fillColor": "#1F1F1F", "fillOpacity": 1 }]
-    },
-    {
-      "type": "text",
-      "name": "Or",
-      "position": { "x": 300, "y": 320 },
-      "characters": "or",
-      "fontFamily": "sourcesanspro",
-      "fontSize": 14,
-      "color": [{ "fillColor": "#6F6F6F", "fillOpacity": 1 }]
-    },
-    {
-      "type": "rectangle",
-      "name": "Email Input",
-      "position": { "x": 250, "y": 350 },
-      "dimensions": { "width": 300, "height": 50 },
-      "color": [{ "fillColor": "#FFFFFF", "fillOpacity": 1 }],
-      "strokes": [{ "strokeColor": "#DDDDDD", "strokeWidth": 1 }]
-    },
-    {
-      "type": "text",
-      "name": "Email Placeholder",
-      "position": { "x": 270, "y": 365 },
-      "characters": "Email address...",
-      "fontFamily": "sourcesanspro",
-      "fontSize": 16,
-      "color": [{ "fillColor": "#AAAAAA", "fillOpacity": 1 }]
-    },
-    {
-      "type": "rectangle",
-      "name": "Password Input",
-      "position": { "x": 250, "y": 420 },
-      "dimensions": { "width": 300, "height": 50 },
-      "color": [{ "fillColor": "#FFFFFF", "fillOpacity": 1 }],
-      "strokes": [{ "strokeColor": "#DDDDDD", "strokeWidth": 1 }]
-    },
-    {
-      "type": "text",
-      "name": "Password Placeholder",
-      "position": { "x": 270, "y": 435 },
-      "characters": "Password...",
-      "fontFamily": "sourcesanspro",
-      "fontSize": 16,
-      "color": [{ "fillColor": "#AAAAAA", "fillOpacity": 1 }]
-    },
-    {
-      "type": "rectangle",
-      "name": "Sign Up Button",
-      "position": { "x": 250, "y": 500 },
-      "dimensions": { "width": 300, "height": 50 },
-      "color": [
-        { "fillColor": "#FF007A", "fillOpacity": 1 },
-        { "fillColor": "#FF55FF", "fillOpacity": 1 }
-      ],
-      "gradient": {
-        "type": "linear",
-        "angle": 90,
-        "stops": [
-          { "color": "#FF007A", "position": 0 },
-          { "color": "#FF55FF", "position": 1 }
-        ]
-      }
-    },
-    {
-      "type": "text",
-      "name": "Sign Up Button Text",
-      "position": { "x": 310, "y": 515 },
-      "characters": "Sign up",
-      "fontFamily": "sourcesanspro",
-      "fontSize": 16,
-      "color": [{ "fillColor": "#FFFFFF", "fillOpacity": 1 }]
-    },
-    {
-      "type": "text",
-      "name": "Footer Text",
-      "position": { "x": 300, "y": 600 },
-      "characters": "Already have an account? Log in",
-      "fontFamily": "sourcesanspro",
-      "fontSize": 14,
-      "color": [{ "fillColor": "#6F6F6F", "fillOpacity": 1 }]
+      "id": "page1",
+      "name": "SignUpPage",
+      "shapes": [
+        {
+          "type": "text",
+          "name": "Logo",
+          "position": { "x": 300, "y": 50 },
+          "characters": "[Logo]",
+          "fontFamily": "sourcesanspro",
+          "fontSize": 48,
+          "color": [{ "fillColor": "#1F1F1F", "fillOpacity": 1 }]
+        },
+        {
+          "type": "text",
+          "name": "Header",
+          "position": { "x": 300, "y": 150 },
+          "characters": "Sign up",
+          "fontFamily": "sourcesanspro",
+          "fontSize": 32,
+          "color": [{ "fillColor": "#1F1F1F", "fillOpacity": 1 }]
+        },
+        {
+          "type": "text",
+          "name": "Sub-header",
+          "position": { "x": 300, "y": 200 },
+          "characters": "Sign up for free and become a member.",
+          "fontFamily": "sourcesanspro",
+          "fontSize": 16,
+          "color": [{ "fillColor": "#6F6F6F", "fillOpacity": 1 }]
+        },
+        {
+          "type": "rectangle",
+          "name": "Google Button",
+          "position": { "x": 250, "y": 250 },
+          "dimensions": { "width": 300, "height": 50 },
+          "color": [{ "fillColor": "#FFFFFF", "fillOpacity": 1 }],
+          "strokes": [{ "strokeColor": "#DDDDDD", "strokeWidth": 1 }]
+        },
+        {
+          "type": "text",
+          "name": "Google Button Text",
+          "position": { "x": 270, "y": 265 },
+          "characters": "Sign up with Google",
+          "fontFamily": "sourcesanspro",
+          "fontSize": 16,
+          "color": [{ "fillColor": "#1F1F1F", "fillOpacity": 1 }]
+        },
+        {
+          "type": "text",
+          "name": "Or",
+          "position": { "x": 300, "y": 320 },
+          "characters": "or",
+          "fontFamily": "sourcesanspro",
+          "fontSize": 14,
+          "color": [{ "fillColor": "#6F6F6F", "fillOpacity": 1 }]
+        },
+        {
+          "type": "rectangle",
+          "name": "Email Input",
+          "position": { "x": 250, "y": 350 },
+          "dimensions": { "width": 300, "height": 50 },
+          "color": [{ "fillColor": "#FFFFFF", "fillOpacity": 1 }],
+          "strokes": [{ "strokeColor": "#DDDDDD", "strokeWidth": 1 }]
+        },
+        {
+          "type": "text",
+          "name": "Email Placeholder",
+          "position": { "x": 270, "y": 365 },
+          "characters": "Email address...",
+          "fontFamily": "sourcesanspro",
+          "fontSize": 16,
+          "color": [{ "fillColor": "#AAAAAA", "fillOpacity": 1 }]
+        },
+        {
+          "type": "rectangle",
+          "name": "Password Input",
+          "position": { "x": 250, "y": 420 },
+          "dimensions": { "width": 300, "height": 50 },
+          "color": [{ "fillColor": "#FFFFFF", "fillOpacity": 1 }],
+          "strokes": [{ "strokeColor": "#DDDDDD", "strokeWidth": 1 }]
+        },
+        {
+          "type": "text",
+          "name": "Password Placeholder",
+          "position": { "x": 270, "y": 435 },
+          "characters": "Password...",
+          "fontFamily": "sourcesanspro",
+          "fontSize": 16,
+          "color": [{ "fillColor": "#AAAAAA", "fillOpacity": 1 }]
+        },
+        {
+          "type": "rectangle",
+          "name": "Sign Up Button",
+          "position": { "x": 250, "y": 500 },
+          "dimensions": { "width": 300, "height": 50 },
+          "color": [
+            { "fillColor": "#FF007A", "fillOpacity": 1 },
+            { "fillColor": "#FF55FF", "fillOpacity": 1 }
+          ],
+          "gradient": {
+            "type": "linear",
+            "angle": 90,
+            "stops": [
+              { "color": "#FF007A", "position": 0 },
+              { "color": "#FF55FF", "position": 1 }
+            ]
+          }
+        },
+        {
+          "type": "text",
+          "name": "Sign Up Button Text",
+          "position": { "x": 310, "y": 515 },
+          "characters": "Sign up",
+          "fontFamily": "sourcesanspro",
+          "fontSize": 16,
+          "color": [{ "fillColor": "#FFFFFF", "fillOpacity": 1 }]
+        },
+        {
+          "type": "text",
+          "name": "Footer Text",
+          "position": { "x": 300, "y": 600 },
+          "characters": "Already have an account? Log in",
+          "fontFamily": "sourcesanspro",
+          "fontSize": 14,
+          "color": [{ "fillColor": "#6F6F6F", "fillOpacity": 1 }]
+        }
+      ]
     }
   ]
 }

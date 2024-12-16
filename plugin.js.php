@@ -74,6 +74,43 @@ penpot.ui.onMessage(async (message) => {
                 }
                 break;
 
+            case "load-json":
+                clearBoard();
+                const json = message.payload;
+                console.log("Received JSON:", json);
+                const json_normalized = normalizeAIResponse(json);
+                console.log( json_normalized ); 
+                buildPageFromJSON(json_normalized);
+                break;
+
+            case "get-page-json":
+                try {
+                    const shapes = penpot.currentPage.findShapes();
+                    const allShapeData = shapes.map((shape) => {
+                        const data = Object.keys(shape).reduce((acc, key) => {
+                            try {
+                                acc[key] = shape[key];
+                            } catch (error) {
+                                console.warn(`Error accessing property '${key}' on shape`, error);
+                            }
+                            return acc;
+                            }, 
+                        {});
+                        // Specific handling for text shapes
+                        if (shape.type === "text") {
+                            data.textContent = shape.content || "No content available";
+                        }
+                        return data;
+                    });
+//                    console.log("Full JSON with dynamic properties:", JSON.stringify(allShapeData, null, 2));
+                    penpot.ui.sendMessage({ type: "showPageStructure", payload: { allShapeData } });
+
+                } catch (error) {
+                    console.error("Error fetching page JSON:", error);
+                    penpot.ui.sendMessage("Error fetching page JSON", "*");
+                }
+                break;
+
             default:
                 console.warn(`Unhandled action: ${action}`);
                 break;
@@ -105,13 +142,6 @@ penpot.on("selectionchange", (selection) => {
 
         // Notify the UI or perform additional actions if needed
         penpot.ui.sendMessage({ type: "update", payload: { selection } });
-
-        // Activate the "Component Design" tab
-        try {
-            activateTab("component-design");
-        } catch (error) {
-            console.error("Error switching tabs:", error);
-        }
 
     } catch (error) {
         console.error("Error handling selection change:", error);
@@ -191,49 +221,141 @@ function validateFont(fontFamily) {
     }
 }
 
+function normalizeAIResponse(aiResponse) {
+    let normalized = { pages: [] };
+
+    if (aiResponse.pages) {
+        normalized.pages = aiResponse.pages;
+
+    } else if (aiResponse.file && aiResponse.file.pages) {
+        normalized.pages = aiResponse.file.pages;
+
+    } else if (aiResponse.artboards) {
+        normalized.pages = aiResponse.artboards.map((artboard) => ({
+            id: artboard.id || "unknown-artboard",
+            name: artboard.name || "Unnamed Artboard",
+            shapes: artboard.elements.map(normalizeShape),
+        }));
+
+    } else if (aiResponse.elements) {
+        normalized.pages = [{
+            id: "generated-page",
+            name: "Generated Page",
+            shapes: aiResponse.elements.map(normalizeShape),
+        }];
+
+    } else if (aiResponse.id && aiResponse.name && aiResponse.elements) {
+        normalized.pages = [{
+            id: aiResponse.id,
+            name: aiResponse.name,
+            shapes: aiResponse.elements.map(normalizeShape),
+        }];
+
+    } else {
+        console.error("Unsupported JSON structure. Unable to normalize:", aiResponse);
+    }
+
+    return normalized;
+}
+
+function normalizeShape(element) {
+    let shapeType = element.type;
+
+    if (shapeType === "box") shapeType = "rectangle";
+    if (shapeType === "circle") shapeType = "ellipse";
+
+    const shape = {
+        id: element.id || "unknown-id",
+        type: shapeType,
+        position: { x: element.x || 0, y: element.y || 0 },
+    };
+
+    if (shapeType === "rectangle" || shapeType === "ellipse") {
+        shape.dimensions = { width: element.width || 100, height: element.height || 100 };
+    }
+
+    if (shapeType === "ellipse" && element.radius) {
+        shape.dimensions = { width: element.radius * 2, height: element.radius * 2 };
+    }
+
+    if (element.style && element.style.fill) {
+        shape.fills = [{ fillColor: element.style.fill, fillOpacity: 1 }];
+    }
+
+    return shape;
+}
+
 function buildPageFromJSON(json) {
     try {
-        // Iterate over each shape in the JSON
-        json.shapes.forEach((shapeData) => {
-            let newShape;
+        // Check and normalize the JSON structure
+        let pages = [];
+        if (json.pages) {
+            pages = json.pages; // Standard structure with pages
+        } else if (json.file && json.file.pages) {
+            pages = json.file.pages; // File-based structure
+        } else if (json.artboard) {
+            pages = [{ id: "artboard", name: "Artboard", shapes: json.artboard }]; // Artboard-based structure
+        } else {
+            console.error("Invalid JSON structure: No 'pages', 'file.pages', or 'artboard' key found.");
+            return;
+        }
 
-            // Validate shapeData structure
-            if (!shapeData || !shapeData.type || !shapeData.position) {
-                console.warn("Invalid shape data:", shapeData);
-                return;
-            }
+        // Iterate over pages
+        pages.forEach((page) => {
+            console.log(`Building page: ${page.name || page.id}`);
 
-            // Create the shape based on its type
-            switch (shapeData.type) {
-                case "rectangle":
-                    newShape = penpot.createRectangle();
-                    newShape.name = shapeData.name || "Unnamed Rectangle";
-                    newShape.resize(shapeData.dimensions.width, shapeData.dimensions.height);
-                    newShape.x = shapeData.position.x;
-                    newShape.y = shapeData.position.y;
-                    if (shapeData.color) newShape.fills = shapeData.color;
-                    break;
+            if (page.shapes && Array.isArray(page.shapes)) {
+                page.shapes.forEach((shapeData) => {
+                    let newShape;
 
-                case "ellipse":
-                    newShape = penpot.createEllipse();
-                    newShape.name = shapeData.name || "Unnamed Ellipse";
-                    newShape.resize(shapeData.dimensions.width, shapeData.dimensions.height);
-                    newShape.x = shapeData.position.x;
-                    newShape.y = shapeData.position.y;
-                    if (shapeData.color) newShape.fills = shapeData.color;
-                    break;
-
-                case "text":
-                    try {
-                        // Use the dedicated `createText` function for validation and creation
-                        createText(shapeData);
-                    } catch (error) {
-                        console.warn("Failed to create text shape:", shapeData, error);
+                    // Validate shapeData structure
+                    if (!shapeData || !shapeData.type || !shapeData.position) {
+                        console.warn("Invalid shape data:", shapeData);
+                        return;
                     }
-                    break;
 
-                default:
-                    console.warn(`Unknown shape type: ${shapeData.type}`);
+                    // Create the shape based on its type
+                    switch (shapeData.type) {
+                        case "rectangle":
+                            newShape = penpot.createRectangle();
+                            newShape.name = shapeData.name || "Unnamed Rectangle";
+                            newShape.resize(shapeData.dimensions.width, shapeData.dimensions.height);
+                            newShape.x = shapeData.position.x;
+                            newShape.y = shapeData.position.y;
+                            if (shapeData.color) newShape.fills = shapeData.color;
+                            break;
+
+                        case "ellipse":
+                            newShape = penpot.createEllipse();
+                            newShape.name = shapeData.name || "Unnamed Ellipse";
+                            newShape.resize(shapeData.dimensions.width, shapeData.dimensions.height);
+                            newShape.x = shapeData.position.x;
+                            newShape.y = shapeData.position.y;
+                            if (shapeData.color) newShape.fills = shapeData.color;
+                            break;
+
+                        case "text":
+                            try {
+                                createText(shapeData);
+                            } catch (error) {
+                                console.warn("Failed to create text shape:", shapeData, error);
+                            }
+                            break;
+
+                        case "board":
+                            console.log("Ignoring board shape during rendering.");
+                            break;
+
+                        case "artboard":
+                            console.log("Ignoring artboard during rendering.");
+                            break;
+
+                        default:
+                            console.warn(`Unknown shape type: ${shapeData.type}`);
+                    }
+                });
+            } else {
+                console.warn("No shapes found for this page.");
             }
         });
     } catch (error) {

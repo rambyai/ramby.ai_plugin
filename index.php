@@ -36,15 +36,16 @@
         <h2>Troubleshooting</h1>
         <p class="mb-2">Review the details of the page, make an adjustment and reload.</p>
 
-        <div class="page-json-div">
-          <label id="label-for-json-input" for="json-input">Show Resulting JSON from AI</label>
-          <textarea id="json-input" placeholder="The prompt result here" DISABLED style="display:none;"><?php include('sample_penpot_design.txt'); ?></textarea><br>
+        <label for="json-input">Add custom JSON here</label>
+        <textarea id="json-input" placeholder="The prompt result here""><?php include('sample_penpot_design.txt'); ?></textarea><br>
+        <button id="load-json" class="button">Load this JSON</button>
+
+        <label class="mt-2" for="page-structure">Show existing page structure here</label>
+        <div class="textarea-container">
+            <textarea id="page-structure" placeholder="" DISABLED></textarea>
+            <span id="copy-icon" class="copy-icon" title="Copy to clipboard">&#128203;</span>
         </div>
-
-        <button id="load-json" class="button">Load JSON</button>
-
-        <button id="get-page-json" class="button">Get Page JSON</button>
-        <pre id="output"></pre>
+       <button id="get-page-json" class="button">Show Page Structure JSON</button>
 
     </div>
 

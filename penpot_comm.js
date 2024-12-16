@@ -1,9 +1,10 @@
 // UI/UX Setup
+const pageStructureElement = document.getElementById("page-structure");
+
 document.addEventListener("DOMContentLoaded", () => {
     // Setup the plugin tabs
     const tabs = document.querySelectorAll(".tab");
     const tabContents = document.querySelectorAll(".tab-content");
-
     tabs.forEach((tab) => {
         tab.addEventListener("click", () => {
             // Remove active class from all tabs and tab contents
@@ -25,6 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const textarea = document.getElementById('json-input');
         textarea.style.display = 'block';
     });
+
 });
 
 // Listen for messages from the plugin
@@ -34,13 +36,6 @@ window.addEventListener("message", async (event) => {
 
     // Log the received message for debugging
     console.log("Message from plugin:", message);
-
-    // Handle pretty-printing JSON messages in the UI
-    if (message && typeof message === "object") {
-        outputElement.textContent = JSON.stringify(message, null, 2);
-    } else {
-        outputElement.textContent = message;
-    }
 
     // Handle "settingsLoaded" event
     if (message.type === "settingsLoaded") {
@@ -83,7 +78,10 @@ window.addEventListener("message", async (event) => {
             let aiResponse = null;
             switch (service) {
                 case "openai":
+                    console.warn( 'testing 6' );
                     aiResponse = await callChatGPT(apiKey, prompt);
+//                    Testing without hitting API for now. 
+//                    aiResponse = "";
                     break;
                 default:
                     console.error(`Unsupported AI service: ${service}`);
@@ -95,10 +93,7 @@ window.addEventListener("message", async (event) => {
             if (aiResponse) {
                 console.log("AI response received:", aiResponse);
                 // Send the generated JSON back to Penpot
-                window.parent.postMessage(
-                    { type: "loadJSON", payload: aiResponse },
-                    "*"
-                );
+                window.parent.postMessage( { type: "load-json", payload: aiResponse }, "*" );
                 hideWaitingDialog();
             } else {
                 console.error("Failed to generate design.");
@@ -121,14 +116,11 @@ window.addEventListener("message", async (event) => {
         alert(`Error: ${message.payload}`);
     }
 
-    if (message.type === "loadJSON") {
-        const json = event.data.payload;
-        document.getElementById("json-input").value = JSON.stringify(json, null, 2);
+    if (message.type == "showPageStructure") {
+        pageStructureElement.textContent = JSON.stringify(event.data.payload, null, 2);
     }
 
 });
-
-const outputElement = document.getElementById("output");
 
 // AI Calls
 document.getElementById("send-to-ai").addEventListener("click", async () => {
@@ -165,7 +157,7 @@ document.getElementById("load-json").addEventListener("click", () => {
 
 // Send a "get-page-json" request to the plugin
 document.getElementById("get-page-json").addEventListener("click", () => {
-    window.parent.postMessage("getPageJSON", "*");
+    window.parent.postMessage("get-page-json", "*");
     console.log("Request for page json sent to plugin.");
 });
 
@@ -184,6 +176,19 @@ document.getElementById("save-settings").addEventListener("click", () => {
     } catch (error) {
         displayMessage("Failed to save settings. Please try again.", "red");
     }
+});
+
+document.getElementById("copy-icon").addEventListener("click", () => {
+console.warn( 'x' );
+    const textarea = document.getElementById("page-structure");
+    if (!textarea.value) {
+        alert("No content to select.");
+        return;
+    }
+    textarea.removeAttribute("DISABLED"); // Temporarily enable selection
+    textarea.select(); // Select the content
+    textarea.setSelectionRange(0, textarea.value.length); // For compatibility
+    textarea.setAttribute("DISABLED", "true"); // Re-disable the textarea
 });
 
 // FUNCTIONS
@@ -224,7 +229,7 @@ function callChatGPT(apiKey, prompt) {
         };
 
         const body = JSON.stringify({
-            model: "ft:gpt-3.5-turbo-1106:personal:rambyai-penpot:AeTY5GW2",
+            model: "ft:gpt-3.5-turbo-1106:personal:rambyai-penpot:AeeWexkJ",
             messages: [
                 { role: "system", content: "You are an AI assistant generating Penpot design JSON." },
                 { role: "user", content: prompt },
@@ -248,46 +253,4 @@ function showWaitingDialog(message) {
 function hideWaitingDialog() {
     const waitingDialog = document.getElementById("waiting-dialog");
     waitingDialog.style.display = "none";
-}
-
-
-
-/// LEGACY WORKING FUNCTION
-function callAPIUsingXHR(apiKey, prompt) {
-    return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", "https://api.openai.com/v1/chat/completions");
-        xhr.setRequestHeader("Authorization", `Bearer ${apiKey}`);
-        xhr.setRequestHeader("Content-Type", "application/json");
-
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState === 4) {
-                if (xhr.status === 200) {
-                    try {
-                        const response = JSON.parse(xhr.responseText);
-                        resolve(response);
-                    } catch (err) {
-                        reject("Error parsing response: " + err.message);
-                    }
-                } else {
-                    reject("HTTP Error: " + xhr.statusText);
-                }
-            }
-        };
-
-        const body = JSON.stringify({
-//            model: "g-673f76aa823c8191b8ac8ed14a11ebff",
-            model: "ft:gpt-3.5-turbo-1106:personal:rambyai-penpot:AeTY5GW2",
-            messages: [
-                { role: "system", content: "You are an AI assistant generating Penpot design JSON." },
-                { role: "user", content: prompt },
-            ],
-        });
-
-        try {
-            xhr.send(body);
-        } catch (error) {
-            reject("Request failed: " + error.message);
-        }
-    });
 }

@@ -4,7 +4,7 @@ header("Content-Type: application/json; charset=utf-8");
 
 echo json_encode([
   "name" => "Design with AI",
-  "host" => "http://localhost",
+  "host" => "http://ramby.ai/plugin/",
   "description" => "Use AI to help create from scratch or alter existing designs.",
   "author" => "Jason Deegan",
   "code" => "plugin.js",

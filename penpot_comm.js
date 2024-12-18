@@ -143,8 +143,12 @@ document.getElementById("send-to-ai").addEventListener("click", async () => {
 
 // Listen for the "Load JSON" button click
 document.getElementById("load-json").addEventListener("click", () => {
-    const jsonInput = document.getElementById("json-input").value;
+    let jsonInput = document.getElementById("json-input").value;
     try {
+        // Step 1: Clean escape characters if they exist
+        jsonInput = jsonInput.replace(/\\"/g, '"'); // Replace \" with "
+        jsonInput = jsonInput.replace(/\\n/g, '');  // Remove unnecessary \n (optional)
+
         // Parse the JSON to ensure it's valid
         const jsonData = JSON.parse(jsonInput);
         // Send the JSON to the plugin
@@ -158,6 +162,11 @@ document.getElementById("load-json").addEventListener("click", () => {
 // Send a "get-page-json" request to the plugin
 document.getElementById("get-page-json").addEventListener("click", () => {
     window.parent.postMessage("get-page-json", "*");
+    console.log("Request for page json sent to plugin.");
+});
+
+document.getElementById("get-page-json-verbose").addEventListener("click", () => {
+    window.parent.postMessage("get-page-json-verbose", "*");
     console.log("Request for page json sent to plugin.");
 });
 
@@ -179,7 +188,6 @@ document.getElementById("save-settings").addEventListener("click", () => {
 });
 
 document.getElementById("copy-icon").addEventListener("click", () => {
-console.warn( 'x' );
     const textarea = document.getElementById("page-structure");
     if (!textarea.value) {
         alert("No content to select.");

@@ -45,7 +45,8 @@
             <textarea id="page-structure" placeholder="" DISABLED></textarea>
             <span id="copy-icon" class="copy-icon" title="Copy to clipboard">&#128203;</span>
         </div>
-       <button id="get-page-json" class="button">Show Page Structure JSON</button>
+       <button id="get-page-json" class="button">Show Cleaned Page Structure JSON</button><br>
+       <button id="get-page-json-verbose" class="button">Show Verbose Page Structure JSON</button>
 
     </div>
 

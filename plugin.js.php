@@ -5,7 +5,7 @@ header("Access-Control-Allow-Headers: Content-Type");
 header("Content-Type: application/javascript; charset=utf-8");
 ?>
 
-penpot.ui.open("Design with AI", "http://localhost:80/index.php", { width: 300, height: 900 });
+penpot.ui.open("Penpot Rapid Prototyping with AI", "http://localhost:80/index.php", { width: 300, height: 900 });
 
 penpot.ui.onMessage(async (message) => {
     try {
@@ -86,6 +86,82 @@ penpot.ui.onMessage(async (message) => {
             case "get-page-json":
                 try {
                     const shapes = penpot.currentPage.findShapes();
+
+                    // Extract minimal shape data
+                    const allShapeData = shapes.map((shape) => {
+                        let data = {
+                            type: shape.type,
+                            name: shape.name || "Unnamed",
+                            position: { x: shape.x || 0, y: shape.y || 0 }
+                        };
+
+                        // Add dimensions for all shapes (rectangles, ellipses, text)
+                        if (shape.bounds) {
+                            data.dimensions = {
+                                width: shape.bounds.width || 0,
+                                height: shape.bounds.height || 0
+                            };
+                        }
+
+                        // Add text properties for text shapes
+                        if (shape.type === "text") {
+                            data.characters = shape.characters || shape.content || "";
+                            data.fontFamily = shape.fontFamily || "sourcesanspro";
+                            data.fontSize = parseFloat(shape.fontSize) || 16; // Ensure numeric font size
+                            data.color = shape.fills || [{ fillColor: "#000000", fillOpacity: 1 }];
+                            data.alignmentHorizontal = shape.align || "left";
+                            data.alignmentVertical = shape.verticalAlign || "top";
+                        }
+
+                        // Add fills for visual shapes
+                        if (shape.fills && shape.fills.length > 0) {
+                            data.color = shape.fills;
+                        }
+
+                        // Add strokes if available
+                        if (shape.strokes && shape.strokes.length > 0) {
+                            data.strokes = shape.strokes;
+                        }
+
+                        // Add gradients if available
+                        if (shape.gradient) {
+                            data.gradient = shape.gradient;
+                        }
+
+                        return data;
+                    });
+
+                    // Sort shapes to ensure rectangles come first, then text, based on position.y
+                    const sortedShapes = allShapeData.sort((a, b) => {
+                        // Prioritize rectangles over text, then sort by y-position
+                        if (a.type === "rectangle" && b.type !== "rectangle") return -1;
+                        if (b.type === "rectangle" && a.type !== "rectangle") return 1;
+                        return a.position.y - b.position.y;
+                    });
+
+                    // Wrap the shapes in a proper training format
+                    const trainingFormat = {
+                        pages: [
+                            {
+                                id: penpot.currentPage.id || "page1",
+                                name: penpot.currentPage.name || "Page 1",
+                                shapes: sortedShapes
+                            }
+                        ]
+                    };
+
+                    // Send the cleaned and formatted JSON
+                    penpot.ui.sendMessage({ type: "showPageStructure", payload: trainingFormat });
+
+                } catch (error) {
+                    console.error("Error fetching minimal page JSON:", error);
+                    penpot.ui.sendMessage("Error fetching minimal page JSON", "*");
+                }
+                break;
+
+            case "get-page-json-verbose":
+                try {
+                    const shapes = penpot.currentPage.findShapes();
                     const allShapeData = shapes.map((shape) => {
                         const data = Object.keys(shape).reduce((acc, key) => {
                             try {
@@ -102,7 +178,6 @@ penpot.ui.onMessage(async (message) => {
                         }
                         return data;
                     });
-//                    console.log("Full JSON with dynamic properties:", JSON.stringify(allShapeData, null, 2));
                     penpot.ui.sendMessage({ type: "showPageStructure", payload: { allShapeData } });
 
                 } catch (error) {
